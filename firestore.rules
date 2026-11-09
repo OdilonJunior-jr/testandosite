@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Exemplo de dados privados, isolados por usuario autenticado.
+    match /usuarios/{userId}/anotacoes/{noteId} {
+      function dono() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+      function dadosValidos() {
+        return request.resource.data.keys().hasOnly(['texto', 'criadoEm'])
+          && request.resource.data.keys().hasAll(['texto', 'criadoEm'])
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() > 0
+          && request.resource.data.texto.size() <= 180
+          && request.resource.data.criadoEm is timestamp;
+      }
+      allow get, list: if dono();
+      allow create: if dono() && dadosValidos()
+        && request.resource.data.criadoEm == request.time;
+      allow update: if dono() && dadosValidos()
+        && request.resource.data.criadoEm == resource.data.criadoEm;
+      allow delete: if dono();
+    }
+    // Todo o restante permanece bloqueado ate existirem regras explicitas.
+  }
+}
