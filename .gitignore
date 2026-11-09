@@ -9,3 +9,6 @@ firebase-debug.*.log
 *.local
 .DS_Store
 .firebase-deploy-ready.json
+
+.autopilot.json
+firebase.json.backup-*

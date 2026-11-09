@@ -11,9 +11,12 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $Root
 
 function ExecutarFirebase([string[]]$Argumentos) {
-  & firebase @Argumentos
-  if ($LASTEXITCODE -ne 0) {
-    throw "Falha no comando firebase $($Argumentos -join ' '). O processo foi interrompido."
+  $preferencia = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { & firebase.cmd @Argumentos; $codigo = $LASTEXITCODE }
+  finally { $ErrorActionPreference = $preferencia }
+  if ($codigo -ne 0) {
+    throw "Falha no comando firebase $($Argumentos -join ' ') (codigo $codigo). O processo foi interrompido."
   }
 }
 function Etapa([string]$Descricao) { Write-Host "`n=== $Descricao ===" -ForegroundColor Cyan }
@@ -41,6 +44,19 @@ function CriarBancoComAjuda([string]$Id, [string]$Local) {
   & firebase 'firestore:databases:create' '(default)' "--location=$Local" '--project' $Id
   if ($LASTEXITCODE -eq 0) { return }
 
+  # Em maquinas com Google Cloud CLI autorizado, habilita API automaticamente.
+  $Gcloud = Get-Command 'gcloud.cmd' -ErrorAction SilentlyContinue
+  if ($Gcloud) {
+    Write-Host 'Tentando habilitar Cloud Firestore API automaticamente com gcloud...' -ForegroundColor Cyan
+    & $Gcloud.Source 'services' 'enable' 'firestore.googleapis.com' '--project' $Id
+    if ($LASTEXITCODE -eq 0) {
+      Start-Sleep -Seconds 8
+      & firebase 'firestore:databases:create' '(default)' "--location=$Local" '--project' $Id
+      if ($LASTEXITCODE -eq 0 -or (BancoDefaultExiste $Id)) { return }
+    }
+  }
+
+  # Se a API exigir acesso/faturamento, so o titular pode autorizar.
   # Projetos recem-criados podem estar com a API Firestore desativada.
   # A ativacao depende da autorizacao da conta no Google Cloud.
   $url = "https://console.cloud.google.com/apis/library/firestore.googleapis.com?project=$Id"
@@ -86,7 +102,24 @@ if ($configJaPronta) {
 }
 
 Etapa 'Autenticacao na sua conta Google'
-ExecutarFirebase @('login')
+# Evita o erro NativeCommandError (PowerShell 5.1) causado pelo progresso
+# de firebase projects:list no stderr redirecionado.
+$preferencia = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+  & firebase.cmd 'projects:list'
+  $codigoProjetos = $LASTEXITCODE
+} finally {
+  $ErrorActionPreference = $preferencia
+}
+if ($codigoProjetos -ne 0) {
+  ExecutarFirebase @('login')
+  $preferencia = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { & firebase.cmd 'projects:list'; $codigoProjetos = $LASTEXITCODE }
+  finally { $ErrorActionPreference = $preferencia }
+  if ($codigoProjetos -ne 0) { throw 'Firebase CLI continua sem listar projetos. Confira a conta ativa com firebase.cmd login:list e as permissoes no console Firebase.' }
+}
 
 if (-not $ProjetoExistente) {
   Etapa "Criando NOVO projeto Firebase: $ProjectId"
@@ -140,5 +173,4 @@ $readyJson = @{ projectId = $ProjectId; deployFinishedUtc = [DateTime]::UtcNow.T
 Write-Host "`nESTRUTURA FIREBASE CONFIGURADA!" -ForegroundColor Green
 Write-Host "Projeto: $ProjectId"
 Write-Host "Console: https://console.firebase.google.com/project/$ProjectId/overview"
-Write-Host "`nPENDENTE UMA VEZ: No console, abra Authentication > Sign-in method e habilite Email/Password." -ForegroundColor Yellow
-Write-Host 'Depois execute PUBLICAR-VERCEL.bat para publicar o frontend.'
+Write-Host 'Proxima etapa automatica: ativar Email/Senha e vincular GitHub e Vercel.' -ForegroundColor Cyan

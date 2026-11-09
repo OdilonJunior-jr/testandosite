@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-param([string]$RepoUrl = "")
+param([string]$RepoUrl = "", [switch]$AutoConfirm)
 $ErrorActionPreference = "Stop"
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $Root
@@ -94,7 +94,8 @@ foreach ($folder in @('src','scripts','.github')) {
 $rootFiles = @('.gitignore','.firebaserc','index.html','package.json','package-lock.json',
   'vite.config.js','vercel.json','firebase.json','firestore.rules','firestore.indexes.json',
   'README.md','CONFIGURAR-FIREBASE.bat','RETOMAR-FIREBASE.bat','GITHUB-VERCEL-LEIA.md',
-  'ENVIAR-PARA-GITHUB.bat','CORRIGIR-E-PUBLICAR.bat','PUBLICAR-VERCEL.bat')
+  'ENVIAR-PARA-GITHUB.bat','CORRIGIR-E-PUBLICAR.bat','PUBLICAR-VERCEL.bat',
+  'AUTOMATIZAR-TUDO.bat','README_AUTOMACAO.md')
 foreach ($rel in $rootFiles) {
   $origin = Join-Path $Root $rel
   if (Test-Path -LiteralPath $origin -PathType Leaf) {
@@ -120,8 +121,12 @@ if (-not $diff) {
 Write-Host "`nArquivos que serao alterados no GitHub:" -ForegroundColor Cyan
 Write-Host $diff
 Write-Host "`nCONFIRA: $RepoUrl (branch $Branch)" -ForegroundColor Yellow
-$Confirmacao = Read-Host 'Digite PUBLICAR para criar commit e enviar ao GitHub'
-if ($Confirmacao -cne 'PUBLICAR') { Write-Host 'Cancelado. NADA foi enviado ao GitHub.' -ForegroundColor Yellow; exit 0 }
+if (-not $AutoConfirm) {
+  $Confirmacao = Read-Host 'Digite PUBLICAR para criar commit e enviar ao GitHub'
+  if ($Confirmacao -cne 'PUBLICAR') { Write-Host 'Cancelado. NADA foi enviado ao GitHub.' -ForegroundColor Yellow; exit 0 }
+} else {
+  Write-Host 'Destino GitHub ja autorizado para este Firebase: publicando automaticamente.' -ForegroundColor Green
+}
 Etapa 'Enviando para o GitHub'
 Executar $Git.Source @('-C', $Temp, 'commit', '-m', 'fix: enviar frontend completo e validar build para Vercel')
 Executar $Git.Source @('-C', $Temp, 'push', 'origin', "HEAD:$Branch")

@@ -16,7 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
       - name: Validar arquivos obrigatorios
         run: |
           test -f src/main.jsx
@@ -25,6 +24,6 @@ jobs:
           test -f src/firebaseConfig.json
           test -f index.html
       - name: Instalar dependencias
-        run: npm ci
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
       - name: Rodar testes e build
         run: npm run check

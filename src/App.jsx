@@ -10,12 +10,18 @@ function friendlyError(error) {
     'auth/invalid-email': 'Confira o endereço de e-mail.',
     'auth/weak-password': 'Use uma senha com pelo menos 6 caracteres.',
     'auth/invalid-credential': 'E-mail ou senha incorretos.',
-    'auth/operation-not-allowed': 'Ative E-mail/Senha no Firebase Authentication.',
+    'auth/operation-not-allowed': 'O login E-mail/Senha nao esta habilitado no projeto Firebase.',
+    'auth/configuration-not-found': 'Firebase Authentication ainda nao foi inicializado neste projeto.',
+    'auth/invalid-api-key': 'A chave publica do Firebase neste site nao e valida.',
+    'auth/unauthorized-domain': 'Este dominio nao esta autorizado no Firebase Authentication.',
+    'auth/network-request-failed': 'Falha de conexao com o Firebase. Verifique sua internet.',
+    'auth/too-many-requests': 'Muitas tentativas. Tente novamente mais tarde.',
     'permission-denied': 'Sem permissão. Confira as regras publicadas do Firestore.',
     'failed-precondition': 'O Firestore ainda não está disponível ou precisa de um índice.',
     'unavailable': 'Serviço temporariamente indisponível. Tente novamente.',
   };
-  return messages[error?.code] || 'Não foi possível concluir. Confira a configuração e tente novamente.';
+  const code = typeof error?.code === 'string' ? error.code : 'desconhecido';
+  return messages[code] || `Operacao nao concluida (codigo: ${code}). Confira a integracao Firebase.`;
 }
 
 function Brand() {
@@ -27,7 +33,7 @@ function MissingSetup() {
     <main className="container hero-wrap"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-circle"/> FIREBASE + REACT</div>
       <h1>Uma base sólida para seu <em>próximo projeto.</em></h1>
       <p>O frontend já está estruturado. Execute o instalador para criar um Firebase independente, conectar o banco e publicar as regras.</p>
-      <div className="setup-instructions"><div><span className="step">01</span> Abra <strong>CONFIGURAR-FIREBASE.bat</strong> no Windows</div><div><span className="step">02</span> Informe o ID exclusivo e o nome do sistema</div><div><span className="step">03</span> Habilite E-mail/Senha no console Firebase</div><div><span className="step">04</span> Execute <strong>PUBLICAR-VERCEL.bat</strong></div></div>
+      <div className="setup-instructions"><div><span className="step">01</span> Abra <strong>AUTOMATIZAR-TUDO.bat</strong> no Windows</div><div><span className="step">02</span> Informe o ID exclusivo e o nome do sistema</div><div><span className="step">03</span> O instalador prepara banco, regras e login</div><div><span className="step">04</span> O instalador envia ao GitHub e vincula a Vercel</div></div>
       <p className="note">Enquanto não houver configuração válida, nenhuma conexão com banco é iniciada.</p>
     </div><aside className="feature-panel"><div className="panel-header"><span>ARQUITETURA DO PROJETO</span><span className="status"><span/> PRONTA PARA CONFIGURAR</span></div>
     <div className="feature"><div className="feature-icon"><Fingerprint size={19}/></div><div><strong>Autenticação</strong><p>Cadastro, login e sessão persistente</p></div><Check size={18} className="check"/></div>
