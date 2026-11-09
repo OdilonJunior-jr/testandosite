@@ -1,0 +1,30 @@
+name: Verificar frontend Firebase + Vercel
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    name: Conferir arquivos, testes e compilacao
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Validar arquivos obrigatorios
+        run: |
+          test -f src/main.jsx
+          test -f src/App.jsx
+          test -f src/firebase.js
+          test -f src/firebaseConfig.json
+          test -f index.html
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Rodar testes e build
+        run: npm run check
